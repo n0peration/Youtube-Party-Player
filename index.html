@@ -32,7 +32,13 @@
 			
 		}
 		
-	
+		function onPageClose() {
+			alert("closing");
+			xmlhttp.open("POST","http://localhost:8880/callback",true);
+			xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+			xmlhttp.send("fin " + videoID);
+		}
+		
 		// get URL params		
 		(function(){
 		    var s = window.location.search.substring(1).split('&');
@@ -44,9 +50,12 @@
 		    }
 		}())
 		
+		window.onunload = function(){
+			onPageClose();
+		}
 	</script>
 </head>
-<body>
+<body onunload="javascript:onPageClose()">
 <script type="text/javascript" src="swfobject/swfobject.js"></script>    
   <div id="ytapiplayer">
     You need Flash player 8+ and JavaScript enabled to view this video.
@@ -59,7 +68,7 @@
     				wmode: "window"
     			 };
     var atts = { id: "myytplayer" };
-    swfobject.embedSWF("http://www.youtube.com/v/"+ videoID +"?enablejsapi=1&playerapiid=ytplayer&version=3&autoplay=1&autohide=1",
+    swfobject.embedSWF("http://www.youtube.com/v/"+ videoID +"?enablejsapi=1&playerapiid=ytplayer&version=3&autoplay=1&autohide=1&hq=1",
                        "ytapiplayer", "100%", "100%", "8", null, null, params, atts);
 
 </script> 

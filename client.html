@@ -2,11 +2,17 @@
 <html>
 <head>
 	<title>PartyPlayer Client</title>
-	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.0.1/jquery.mobile-1.0.1.min.css" />
-	<script src="http://code.jquery.com/jquery-1.6.4.min.js"></script>
-	<script src="http://code.jquery.com/mobile/1.0.1/jquery.mobile-1.0.1.min.js"></script>
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.1.0-rc.1/jquery.mobile-1.1.0-rc.1.min.css" />
+	<script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.1.0-rc.1/jquery.mobile-1.1.0-rc.1.min.js"></script>
 	<script type="text/javascript">
-	
+
+		var curIP;
+		curIP = string_substract(window.location.toString(),window.location.pathname.toString());
+		 
+	    var ajax_load = "<img src='http://code.jquery.com/mobile/1.1.0-rc.1/images/ajax-loader.gif' alt='loading...' />";  
+		var loadUrl = curIP+"/playlist";
+		
 		var xmlhttp;
 		if (window.XMLHttpRequest)
 		  {// code for IE7+, Firefox, Chrome, Opera, Safari
@@ -29,16 +35,65 @@
 		}())
 		
 		function search(){
-			xmlhttp.open("POST","http://"+$('#ip').val()+":8880/callback",true);
+			xmlhttp.open("POST",curIP+"/callback",true);
 			xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
-			xmlhttp.send("play " + $('#search-basic').val());
+			xmlhttp.send("cmd play " + $('#search-basic').val());
+			loadPlaylist(); // load ajax on submit event
 		}
 		
 		function url(){
-			xmlhttp.open("POST","http://"+$('#ip').val()+":8880/callback",true);
+			xmlhttp.open("POST",curIP+"/callback",true);
 			xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
-			xmlhttp.send("url " + $('#search-basic').val());
+			xmlhttp.send("cmd url " + $('#search-basic').val());
+			loadPlaylist(); // load ajax on submit event
 		}
+		
+		function deleteFromPlaylist(id){
+			xmlhttp.open("POST",curIP+"/callback",true);
+			xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+			xmlhttp.send("cmd del " + id);
+		}
+		
+		function string_substract(str1, str2) { 
+		   var pos = str1.indexOf(str2); 
+		   if( pos == -1 ){ 
+		      return str1; 
+		   } 
+		   else { 
+		      var result = str1.substr(0, pos) + str1.substr(pos + str2.length); 
+		      return result; 
+		   } 
+		}
+		
+		function loadPlaylist() {
+			var dataStr = "";
+            $.getJSON(  
+                loadUrl,
+                {
+			      format: "json"
+			    },
+                function(data) {
+                	$('#playlist').listview();
+				    $.each(data, function(i,item){
+				      dataStr += "\n\
+						<li>\n\
+							<a href=\"javascript:deleteFromPlaylist('"+item.id+"')\">\n\
+								<img src=\"http://img.youtube.com/vi/"+item.id+"/2.jpg\" />\n\
+								<h3 style='margin-left:3%'>" + item.title + "</h3>\n\
+								<p style='margin-left:3%'>" + item.runtime + "</p>\n\
+							</a>\n\
+						</li>";
+				    });
+				    $('#playlist').html(dataStr);
+				    $('#playlist').listview('refresh');
+				    $('#playlistTitle').html("Playlist");
+			    }); 
+		}
+	  
+		$(document).ready(function() {
+		    loadPlaylist(); // load playlist on page load
+        });
+		
 	</script>
 </head>
 <body>
@@ -55,8 +110,12 @@
 			<a href="javascript:search()" data-role="button">Search</a>
 			<a href="javascript:url()" data-role="button">URL</a>
 		</div>
-		<label for="ip">Server IP:</label>
-    	<input type="text" name="ip" id="ip" value="192.168.1.10"  />		
+		<!--<label for="ip">Server IP:</label>
+    	<input type="text" name="ip" id="ip" value="192.168.1.10"  />-->
+    	<div>
+    		<h2 id="playlistTitle"></h2>
+    		<ul data-role="listview" id="playlist"></ul>
+    	</div>	
 	</div><!-- /content -->
 </div><!-- /page -->		
 </body>

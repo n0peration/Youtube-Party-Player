@@ -1,5 +1,7 @@
 # run server: twistd -y webserver.py -n
 # served player: http://localhost:8880/player/?videoID=j2TDoGsA43Y
+# TODO: add data abstraction eg. keyword from client "cmd"
+#		if cmd call server with params else write data to playlist !!!
 
 from pprint import pprint
 from twisted.application.internet import TCPServer
@@ -9,6 +11,7 @@ from twisted.web.server import Site
 from twisted.web.static import File
 import socket
 import sys
+import os.path
 
 class PartyServer():
     
@@ -35,14 +38,21 @@ class FormPage(Resource):
     	request.setHeader('Access-Control-Max-Age', 2520)
     	request.setHeader('Content-type', 'application/json') 
         pprint(request.__dict__)
-        newdata = request.content.getvalue()
-        print newdata
-        
-        ytplayer = PartyServer()
-    	ytplayer.connect("127.0.0.1",3421) # lokaler yt-partyplayer server
-    	ytplayer.send(newdata)
-    	ytplayer.quit()
-        
+        postdata = request.content.getvalue()
+        print "Debug:" + postdata + " :" + postdata.split(' ',1)[0]
+        pdataArray = postdata.split(' ',1)
+        if(pdataArray[0] == "cmd"):
+            ytplayer = PartyServer()
+            ytplayer.connect("127.0.0.1",3421) # lokaler yt-partyplayer server
+            ytplayer.send(pdataArray[1])
+            print "Request to PartyServer:" + pdataArray[1]
+            ytplayer.quit()    
+        else:
+            FILE = open("./playlist","w")
+            FILE.writelines(postdata)
+            print "Write to File:" + postdata
+            FILE.close()
+            
         return ''
 
 
@@ -50,6 +60,7 @@ root = Resource()
 root.putChild("callback", FormPage()) # xhttprequest 
 root.putChild("player", File("./")) # static player page
 root.putChild("client", File("./client.html")) # client page
+root.putChild("playlist", File("./playlist.json")) # json playlist
 root.putChild("js", File("./js/"))
 root.putChild("css", File("./css/"))
 application = Application("My Web Service - PartyPlayer")
