@@ -60,7 +60,7 @@ root = Resource()
 root.putChild("callback", FormPage()) # xhttprequest 
 root.putChild("player", File("./")) # static player page
 root.putChild("client", File("./client.html")) # client page
-root.putChild("playlist", File("./playlist.json")) # json playlist
+root.putChild("playlist", File("./playlist")) # json playlist
 root.putChild("js", File("./js/"))
 root.putChild("css", File("./css/"))
 application = Application("My Web Service - PartyPlayer")
