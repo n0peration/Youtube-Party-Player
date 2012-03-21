@@ -6,6 +6,8 @@ import webbrowser
 import gdata
 import gdata.youtube
 import gdata.youtube.service
+import json
+import urllib2
 import re
 from collections import deque
 from socket import AF_INET, SOCK_STREAM
@@ -84,8 +86,10 @@ class PartyServer(object):
                             self.log.error("video_id was None: {0}".format(url))
                             raise
                         if self.currently_playing == True:
-                            self.playlist.append(video_id)
-                            self.log.info("added url to playlist")
+                            entry = self.get_youtube_info_by_id(video_id)
+                            self.playlist.append(entry)
+                            self.log.info("added {0} to playlist".format(entry))
+                            self.send_playlist_to_server()
                         else:
                             self.open_webplayer_with_id(video_id)
                     else:
@@ -93,10 +97,15 @@ class PartyServer(object):
             finally:
                 c.close()
 
+    def send_playlist_to_server(self):
+        self.log.info("sending playlist to webserver")
+        jdata = json.dumps(self.playlist)
+        urrlib2.urlopen("http://127.0.0.1:8880/callback", jdata)
+
     def try_play_next(self):
         self.currently_playing = False
         if len(self.playlist) > 0:
-            self.open_webplayer_with_id(self.playlist.popleft())
+            self.open_webplayer_with_id(self.playlist.popleft()["id"])
 
     def search_youtube(self, search_terms, orderby="relevance", racy="include"):
         """Returns a feed containing the entrys"""
@@ -122,6 +131,16 @@ class PartyServer(object):
         if match:
             video_id = match.groups()[0]
         return video_id
+
+    def get_youtube_info_by_id(self, v_id):
+        ytclient = gdata.youtube.service.YouTubeServer()
+        video = ytclient.GetYouTubeVideoEntry(video_id=v_id)
+        if video:
+            duration = int(video.media.duration.seconds)
+            durationstr = str(duration/60) + ":" + str(duration%60)
+            title = video.media.title.text
+
+        return {"id": v_id, "runtime": durationstr, "title": title}
 
     def open_webplayer_with_id(self, video_id):
         if not video_id:
