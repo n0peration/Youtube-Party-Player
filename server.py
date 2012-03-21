@@ -99,8 +99,8 @@ class PartyServer(object):
 
     def send_playlist_to_server(self):
         self.log.info("sending playlist to webserver")
-        jdata = json.dumps(self.playlist)
-        urrlib2.urlopen("http://127.0.0.1:8880/callback", jdata)
+        jdata = json.dumps(list(self.playlist))
+        urllib2.urlopen("http://127.0.0.1:8880/callback", jdata)
 
     def try_play_next(self):
         self.currently_playing = False
@@ -133,7 +133,7 @@ class PartyServer(object):
         return video_id
 
     def get_youtube_info_by_id(self, v_id):
-        ytclient = gdata.youtube.service.YouTubeServer()
+        ytclient = gdata.youtube.service.YouTubeService()
         video = ytclient.GetYouTubeVideoEntry(video_id=v_id)
         if video:
             duration = int(video.media.duration.seconds)
