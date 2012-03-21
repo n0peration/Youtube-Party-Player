@@ -27,7 +27,7 @@
    			if (newState === 0) {
    				xmlhttp.open("POST","http://localhost:8880/callback",true);
 				xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
-				xmlhttp.send("fin " + videoID);
+				xmlhttp.send("cmd fin " + videoID);
    			}
 			
 		}
@@ -36,7 +36,7 @@
 			alert("closing");
 			xmlhttp.open("POST","http://localhost:8880/callback",true);
 			xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
-			xmlhttp.send("fin " + videoID);
+			xmlhttp.send("cmd fin " + videoID);
 		}
 		
 		// get URL params		
