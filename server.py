@@ -106,6 +106,8 @@ class PartyServer(object):
         self.currently_playing = False
         if len(self.playlist) > 0:
             self.open_webplayer_with_id(self.playlist.popleft()["id"])
+        else:
+            self.send_playlist_to_server()
 
     def search_youtube(self, search_terms, orderby="relevance", racy="include"):
         """Returns a feed containing the entrys"""
@@ -161,7 +163,7 @@ def main():
             if cmd == "unlock":
                 server.try_play_next()
             elif cmd == "playlist":
-                print((server.playlist))
+                print(server.playlist)
 
 if __name__ == "__main__":
     main()
