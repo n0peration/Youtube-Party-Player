@@ -84,7 +84,8 @@ class PartyServer(object):
                     self.try_play_next()
             elif data.startswith(DEL):
                 video_id = data[len(DEL):]
-                self.delete_from_playlist(video_id)
+                if self.playlist[0]["id"] != video_id:
+                    self.delete_from_playlist(video_id)
 
             try:
                 if url:
@@ -95,24 +96,29 @@ class PartyServer(object):
                             raise
                         else:
                             entry = self.get_youtube_info_by_id(video_id)
-                            for e in self.playlist:
-                                if entry["id"] == e["id"]:
-                                    continue
-                            self.playlist.append(entry)
-                            self.log.info("added {0} to playlist".format(entry))
-                            self.send_playlist_to_server()
-                            if len(self.playlist) == 1:
-                                self.try_play_next()
+
+                            if not self.id_in_playlist(video_id):
+                                self.playlist.append(entry)
+                                self.log.info("added {0} to playlist".format(entry))
+                                self.send_playlist_to_server()
+                                if len(self.playlist) == 1:
+                                    self.try_play_next()
                     else:
                         self.open_url(url)
             finally:
                 c.close()
 
+    def id_in_playlist(self, video_id):
+        for e in self.playlist:
+            if video_id == e["id"]:
+                return True
+        return False
+
     def delete_from_playlist(self, video_id):
         self.log.debug("Trying to delete {0}".format(video_id))
         for e in self.playlist:
             self.log.debug("{0} == {1} ?".format(video_id, e["id"]))
-            if video_id.strip() == e["id"]:
+            if video_id == e["id"]:
                 self.log.info("Deleting {0} from playlist".format(str(e)))
                 self.playlist.remove(e)
                 self.send_playlist_to_server()
