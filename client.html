@@ -9,6 +9,8 @@
 	<script src="http://code.jquery.com/mobile/1.1.0-rc.1/jquery.mobile-1.1.0-rc.1.min.js"></script>
 	<script type="text/javascript">
 
+		timerId = setInterval("loadPlaylist()", 5000);
+		
 		var curIP;
 		curIP = string_substract(window.location.toString(),window.location.pathname.toString());
 		 
@@ -40,14 +42,16 @@
 			xmlhttp.open("POST",curIP+"/callback",true);
 			xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
 			xmlhttp.send("cmd play " + $('#search-basic').val());
-			loadPlaylist(); // load ajax on submit event
+			//setTimeout(loadPlaylist() ,2500); // load ajax on submit event
+			loadPlaylist();
 		}
 		
 		function url(){
 			xmlhttp.open("POST",curIP+"/callback",true);
 			xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
 			xmlhttp.send("cmd url " + $('#search-basic').val());
-			loadPlaylist(); // load ajax on submit event
+			//setTimeout(loadPlaylist() ,2500);// load ajax on submit event
+			loadPlaylist();
 		}
 		
 		function deleteFromPlaylist(id){
@@ -85,16 +89,16 @@
 								<p style='margin-left:5%'>" + item.runtime + "</p>\n\
 							</a>\n\
 						</li>";
+				    $('#playlistTitle').html("Playlist");
 				    });
 				    $('#playlist').html(dataStr);
 				    $('#playlist').listview('refresh');
-				    $('#playlistTitle').html("Playlist");
 			    }); 
 		}
 	  
 		$(document).ready(function() {
 		    loadPlaylist(); // load playlist on page load
-		    //setInterval(function(){loadPlaylist();}, 10000); alle x ms playlist request
+		   //setInterval(function(){loadPlaylist();}, 10000); alle x ms playlist request
         });
 		
 	</script>

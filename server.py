@@ -15,6 +15,7 @@ from socket import AF_INET, SOCK_STREAM
 OPENURL = "url "
 SEARCH = "play "
 END = "fin "
+DEL = "del "
 
 class Logger(object):
     """Simple Logger"""
@@ -39,7 +40,6 @@ class PartyServer(object):
     def __init__(self):
         self.playlist = deque([])
         self.log = Logger()
-        self.currently_playing = False
         self.sock = None
 
     def start(self):
@@ -71,12 +71,20 @@ class PartyServer(object):
                 self.log.info("Searching on youtube for {0}...".format(subject))
                 feed = self.search_youtube(subject)
                 if not feed or len(feed.entry) == 0:
+                    self.log.warning("Could not find \"{0}\" on youtube!".format(subject))
                     c.close()
                     continue
+                self.log.warning("Found \"{0}\" on youtube!".format(subject))
                 firstentry = feed.entry[0]
                 url = firstentry.media.player.url
             elif data.startswith(END):
-                self.try_play_next()
+                video_id = data[len(END):]
+                d = self.delete_from_playlist(video_id)
+                if d == 0:
+                    self.try_play_next()
+            elif data.startswith(DEL):
+                video_id = data[len(DEL):]
+                self.delete_from_playlist(video_id)
 
             try:
                 if url:
@@ -85,17 +93,32 @@ class PartyServer(object):
                         if not video_id:
                             self.log.error("video_id was None: {0}".format(url))
                             raise
-                        if self.currently_playing == True:
+                        else:
                             entry = self.get_youtube_info_by_id(video_id)
+                            for e in self.playlist:
+                                if entry["id"] == e["id"]:
+                                    continue
                             self.playlist.append(entry)
                             self.log.info("added {0} to playlist".format(entry))
                             self.send_playlist_to_server()
-                        else:
-                            self.open_webplayer_with_id(video_id)
+                            if len(self.playlist) == 1:
+                                self.try_play_next()
                     else:
                         self.open_url(url)
             finally:
                 c.close()
+
+    def delete_from_playlist(self, video_id):
+        self.log.debug("Trying to delete {0}".format(video_id))
+        for e in self.playlist:
+            self.log.debug("{0} == {1} ?".format(video_id, e["id"]))
+            if video_id.strip() == e["id"]:
+                self.log.info("Deleting {0} from playlist".format(str(e)))
+                self.playlist.remove(e)
+                self.send_playlist_to_server()
+                return 0
+                #break
+        return -1
 
     def send_playlist_to_server(self):
         self.log.info("sending playlist to webserver")
@@ -103,9 +126,8 @@ class PartyServer(object):
         urllib2.urlopen("http://127.0.0.1:8880/callback", jdata)
 
     def try_play_next(self):
-        self.currently_playing = False
         if len(self.playlist) > 0:
-            self.open_webplayer_with_id(self.playlist.popleft()["id"])
+            self.open_webplayer_with_id(self.playlist[0]["id"])
         else:
             self.send_playlist_to_server()
 
@@ -149,7 +171,6 @@ class PartyServer(object):
             self.log.error("Error: open_webplayer_with_id, video_id was None")
         webplayer_url = "http://localhost:8880/player/?videoID={0}".format(video_id)
         webbrowser.open(webplayer_url, new=0)
-        self.currently_playing = True
 
 def main():
     server = PartyServer()
