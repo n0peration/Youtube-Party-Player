@@ -102,65 +102,64 @@ def is_id_in_playlist(playlist, video_id):
             return True
     return False
 
-def start_receiving(sock, playlist):
-    while True:
-        c, addr = sock.accept()
-        log.info("{0} connected".format(addr))
-        data = c.recv(1024)
-        if not data:
-            log.warning("Failed to receive data, try again.")
+def receive(sock, playlist):
+    c, addr = sock.accept()
+    log.info("{0} connected".format(addr))
+    data = c.recv(1024)
+    if not data:
+        log.warning("Failed to receive data, try again.")
+        c.close()
+        raise
+    log.recv(data)
+    url = ""
+
+    if data.startswith(OPENURL):
+        url = data[len(OPENURL):]
+    elif data.startswith(SEARCH):
+        subject = data[len(SEARCH):]
+        log.info("Searching on youtube for {0}...".format(subject))
+        feed = search_youtube(subject)
+        if not feed or len(feed.entry) == 0:
+            log.warning("Could not find \"{0}\" on youtube!".format(subject))
             c.close()
-            continue
-        log.recv(data)
-        url = ""
+            raise
+        log.info("Found \"{0}\" on youtube!".format(subject))
+        firstentry = feed.entry[0]
+        url = firstentry.media.player.url
+    elif data.startswith(END):
+        video_id = data[len(END):]
+        if len(playlist) > 0 and playlist[0]["id"] == video_id:
+            playlist.popleft()
+            send_playlist_to_server(playlist)
+            try_play_next(playlist)
+        #d = delete_from_playlist(playlist, video_id)
+        #if d == 0:
+        #    try_play_next(playlist)
+    elif data.startswith(DEL):
+        video_id = data[len(DEL):]
+        if playlist[0]["id"] != video_id:
+            playlist = delete_from_playlist(playlist, video_id)
 
-        if data.startswith(OPENURL):
-            url = data[len(OPENURL):]
-        elif data.startswith(SEARCH):
-            subject = data[len(SEARCH):]
-            log.info("Searching on youtube for {0}...".format(subject))
-            feed = search_youtube(subject)
-            if not feed or len(feed.entry) == 0:
-                log.warning("Could not find \"{0}\" on youtube!".format(subject))
-                c.close()
-                continue
-            log.info("Found \"{0}\" on youtube!".format(subject))
-            firstentry = feed.entry[0]
-            url = firstentry.media.player.url
-        elif data.startswith(END):
-            video_id = data[len(END):]
-            if len(playlist) > 0 and playlist[0]["id"] == video_id:
-                playlist.popleft()
-                send_playlist_to_server(playlist)
-                try_play_next(playlist)
-            #d = delete_from_playlist(playlist, video_id)
-            #if d == 0:
-            #    try_play_next(playlist)
-        elif data.startswith(DEL):
-            video_id = data[len(DEL):]
-            if playlist[0]["id"] != video_id:
-                playlist = delete_from_playlist(playlist, video_id)
-
-        try:
-            if url:
-                if "youtu" in url:
-                    video_id = get_youtube_id_from_url(url)
-                    if not video_id:
-                        log.error("video_id was None: {0}".format(url))
-                        raise
-                    else:
-                        entry = get_youtube_info_by_id(video_id)
-
-                        if not is_id_in_playlist(playlist, video_id):
-                            playlist.append(entry)
-                            log.info("Added {0} to playlist".format(entry))
-                            send_playlist_to_server(playlist)
-                            if len(playlist) == 1:
-                                try_play_next(playlist)
+    try:
+        if url:
+            if "youtu" in url:
+                video_id = get_youtube_id_from_url(url)
+                if not video_id:
+                    log.error("video_id was None: {0}".format(url))
+                    raise
                 else:
-                    open_url(url)
-        finally:
-            c.close()
+                    entry = get_youtube_info_by_id(video_id)
+
+                    if not is_id_in_playlist(playlist, video_id):
+                        playlist.append(entry)
+                        log.info("Added {0} to playlist".format(entry))
+                        send_playlist_to_server(playlist)
+                        if len(playlist) == 1:
+                            try_play_next(playlist)
+            else:
+                open_url(url)
+    finally:
+        c.close()
 
 
 def start():
@@ -183,8 +182,7 @@ def main():
 
     while True:
         try:
-            start_receiving(sock, playlist)
-        # provide some options
+            receive(sock, playlist)
         except KeyboardInterrupt:
             print("[skip|playlist]")
             cmd = raw_input()
@@ -193,6 +191,8 @@ def main():
                 try_play_next(playlist)
             elif cmd == "playlist":
                 print(playlist)
+        except:
+            continue
 
 if __name__ == "__main__":
     main()
