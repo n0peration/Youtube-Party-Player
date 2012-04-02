@@ -7,6 +7,7 @@ import gdata.youtube.service as yt_service
 import json
 import urllib2
 import re
+import sys
 from log import Logger, Level, put_stdout
 from collections import deque
 from socket import AF_INET, SOCK_STREAM
@@ -184,13 +185,18 @@ def main():
         try:
             receive(sock, playlist)
         except KeyboardInterrupt:
-            print("[skip|playlist]")
-            cmd = raw_input()
-            # this will try to play the next video even if the current one is not finished
-            if cmd == "skip":
-                try_play_next(playlist)
-            elif cmd == "playlist":
-                print(playlist)
+            try:
+                print("[skip|playlist]")
+                cmd = raw_input()
+                # this will try to play the next video even if the current one is not finished
+                if cmd == "skip":
+                    try_play_next(playlist)
+                elif cmd == "playlist":
+                    print(playlist)
+            except KeyboardInterrupt:
+                fp = open("playlist", "w")
+                fp.write("")
+                sys.exit(0)
         except:
             continue
 
