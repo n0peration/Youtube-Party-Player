@@ -98,12 +98,14 @@ def delete_from_playlist(playlist, video_id):
     return newplaylist
 
 def is_id_in_playlist(playlist, video_id):
+    """Return True if the video id is in the playlist, otherwise return False"""
     for e in playlist:
         if video_id == e["id"]:
             return True
     return False
 
 def receive(sock, playlist):
+    """Receive and handle a command. This should be called in a loop"""
     c, addr = sock.accept()
     log.info("{0} connected".format(addr))
     data = c.recv(1024)
@@ -185,15 +187,18 @@ def main():
         try:
             receive(sock, playlist)
         except KeyboardInterrupt:
+            # provide a few options
             try:
                 print("[skip|playlist]")
                 cmd = raw_input()
                 # this will try to play the next video even if the current one is not finished
                 if cmd == "skip":
                     try_play_next(playlist)
+                # print playlist
                 elif cmd == "playlist":
                     print(playlist)
             except KeyboardInterrupt:
+                # on the second keyboard interrupt, clear the playlist file and exit
                 fp = open("playlist", "w")
                 fp.write("")
                 sys.exit(0)
